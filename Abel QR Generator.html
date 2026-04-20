@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abel QR Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; display: flex; flex-direction: column; align-items: center; padding-top: 50px; background: #f0f2f5; color: #333; }
+        .container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; width: 350px; }
+        h1 { color: #1a73e8; margin-bottom: 20px; font-size: 24px; }
+        input { padding: 12px; width: 90%; border: 2px solid #ddd; border-radius: 10px; font-size: 14px; outline: none; transition: border 0.3s; }
+        input:focus { border-color: #1a73e8; }
+        .button-group { margin-top: 20px; display: flex; gap: 10px; justify-content: center; }
+        button { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: transform 0.1s; }
+        button:active { transform: scale(0.95); }
+        .btn-gen { background: #1a73e8; color: white; }
+        .btn-clear { background: #5f6368; color: white; }
+        .btn-down { background: #34a853; color: white; margin-top: 15px; width: 100%; display: none; }
+        #display-area { margin-top: 30px; min-height: 220px; display: flex; align-items: center; justify-content: center; border: 2px dashed #ccc; border-radius: 10px; background: #fafafa; }
+        #qrcode { display: none; } /* Hidden until generated */
+        .status-text { color: #888; font-style: italic; }
+        .error-text { color: #d93025; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Abel QR Generator</h1>
+        <input type="text" id="url-input" placeholder="Enter URL (e.g., https://google.com)">
+        
+        <div class="button-group">
+            <button class="btn-gen" onclick="handleGenerate()">Generate</button>
+            <button class="btn-clear" onclick="handleClear()">Clear</button>
+        </div>
+
+        <div id="display-area">
+            <span id="message" class="status-text">No URL Inserted</span>
+            <div id="qrcode"></div>
+        </div>
+
+        <button id="download-btn" class="btn-down" onclick="downloadWithOutline()">Download QR</button>
+    </div>
+
+    <script>
+        const urlInput = document.getElementById("url-input");
+        const qrcodeDiv = document.getElementById("qrcode");
+        const message = document.getElementById("message");
+        const downloadBtn = document.getElementById("download-btn");
+
+        const qr = new QRCode(qrcodeDiv, {
+            width: 200,
+            height: 200,
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        function isValidURL(string) {
+            try {
+                const url = new URL(string);
+                return url.protocol === "http:" || url.protocol === "https:";
+            } catch (_) {
+                return false;  
+            }
+        }
+
+        function handleGenerate() {
+            const val = urlInput.value.trim();
+
+            // 1. Reset display
+            qrcodeDiv.style.display = "none";
+            downloadBtn.style.display = "none";
+
+            if (val === "") {
+                message.innerText = "No URL Inserted";
+                message.className = "status-text";
+            } 
+            else if (!isValidURL(val)) {
+                message.innerText = "URL Is Invalid";
+                message.className = "error-text";
+            } 
+            else {
+                // Success
+                message.innerText = "";
+                qr.makeCode(val);
+                qrcodeDiv.style.display = "block";
+                downloadBtn.style.display = "block";
+            }
+        }
+
+        function handleClear() {
+            urlInput.value = "";
+            qrcodeDiv.style.display = "none";
+            downloadBtn.style.display = "none";
+            message.innerText = "No URL Inserted";
+            message.className = "status-text";
+        }
+
+        function downloadWithOutline() {
+            const canvas = qrcodeDiv.querySelector('canvas');
+            if (!canvas) return;
+
+            // Create a temporary canvas for the white outline (padding)
+            const padding = 20;
+            const tempCanvas = document.createElement("canvas");
+            const ctx = tempCanvas.getContext("2d");
+
+            tempCanvas.width = canvas.width + (padding * 2);
+            tempCanvas.height = canvas.height + (padding * 2);
+
+            // Draw white background
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+            // Draw the QR code on top
+            ctx.drawImage(canvas, padding, padding);
+
+            // Trigger download
+            const link = document.createElement("a");
+            link.href = tempCanvas.toDataURL("image/png");
+            link.download = "Abel_QR_Code.png";
+            link.click();
+        }
+    </script>
+</body>
+</html>
