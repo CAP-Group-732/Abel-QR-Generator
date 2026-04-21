@@ -6,26 +6,61 @@
     <title>Abel QR Generator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; display: flex; flex-direction: column; align-items: center; padding-top: 50px; background: #f0f2f5; color: #333; }
-        .container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; width: 350px; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f0f2f5; color: #333; }
+        
+        /* Modal / Gateway Styles */
+        #gateway-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; display: flex; align-items: center; justify-content: center; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .legal-box { max-width: 500px; background: white; padding: 30px; border-radius: 15px; border: 1px solid #ddd; text-align: left; }
+        .legal-content { height: 250px; overflow-y: scroll; border: 1px solid #eee; padding: 15px; margin-bottom: 20px; font-size: 13px; line-height: 1.6; background: #fafafa; border-radius: 8px; }
+        
+        /* Main App Styles */
+        .container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; width: 350px; display: none; margin-bottom: 20px; }
         h1 { color: #1a73e8; margin-bottom: 20px; font-size: 24px; }
         input { padding: 12px; width: 90%; border: 2px solid #ddd; border-radius: 10px; font-size: 14px; outline: none; transition: border 0.3s; }
         input:focus { border-color: #1a73e8; }
         .button-group { margin-top: 20px; display: flex; gap: 10px; justify-content: center; }
         button { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: transform 0.1s; }
-        button:active { transform: scale(0.95); }
+        button:disabled { background: #ccc; cursor: not-allowed; }
         .btn-gen { background: #1a73e8; color: white; }
         .btn-clear { background: #5f6368; color: white; }
+        .btn-enter { background: #1a73e8; color: white; width: 100%; margin-top: 10px; }
         .btn-down { background: #34a853; color: white; margin-top: 15px; width: 100%; display: none; }
+        
         #display-area { margin-top: 30px; min-height: 220px; display: flex; align-items: center; justify-content: center; border: 2px dashed #ccc; border-radius: 10px; background: #fafafa; }
-        #qrcode { display: none; } /* Hidden until generated */
+        #qrcode { display: none; }
         .status-text { color: #888; font-style: italic; }
         .error-text { color: #d93025; font-weight: bold; }
+        
+        footer { font-size: 12px; color: #777; margin-top: 20px; text-align: center; }
+        .legal-nav { margin-top: 10px; }
+        .legal-nav span { cursor: pointer; color: #1a73e8; text-decoration: underline; margin: 0 10px; }
     </style>
 </head>
 <body>
 
-    <div class="container">
+    <div id="gateway-overlay">
+        <div class="legal-box">
+            <h2>Terms & Privacy</h2>
+            <div class="legal-content">
+                <h3>Terms of Service</h3>
+                <p>This application is created by Abel Joseph Christopher and hosted with the assistance of his Parent/Guardian. By using this tool, you agree that this app is for personal use only.</p>
+                <p><strong>Ownership:</strong> All rights to this application belong to Abel Joseph Christopher and his Parent/Guardian. Do not copy, distribute, or modify the source code without permission.</p>
+                
+                <h3>Privacy Policy</h3>
+                <p>We respect your privacy. This application does not store, collect, or share any personal data or the URLs you enter. The QR code generation happens locally in your browser.</p>
+                <p>Since this is hosted on Tiiny.host, please be aware of their standard hosting privacy practices.</p>
+            </div>
+            
+            <label style="font-size: 14px;">
+                <input type="checkbox" id="agree-checkbox" style="width: auto;"> 
+                By ticking the checkbox, You agree to our terms of service and privacy policy
+            </label>
+            
+            <button id="enter-btn" class="btn-enter" disabled onclick="enterApp()">Enter App</button>
+        </div>
+    </div>
+
+    <div class="container" id="main-app">
         <h1>Abel QR Generator</h1>
         <input type="text" id="url-input" placeholder="Enter URL (e.g., https://google.com)">
         
@@ -42,12 +77,39 @@
         <button id="download-btn" class="btn-down" onclick="downloadWithOutline()">Download QR</button>
     </div>
 
+    <footer>
+        <p>Made by Abel Joseph Christopher and hosted with the assistance of his Parent/Guardian.Do not copy.</p>
+        <div class="legal-nav">
+            <span onclick="showLegal()">View Terms & Privacy</span>
+        </div>
+    </footer>
+
     <script>
         const urlInput = document.getElementById("url-input");
         const qrcodeDiv = document.getElementById("qrcode");
         const message = document.getElementById("message");
         const downloadBtn = document.getElementById("download-btn");
+        const agreeCheckbox = document.getElementById("agree-checkbox");
+        const enterBtn = document.getElementById("enter-btn");
+        const gateway = document.getElementById("gateway-overlay");
+        const mainApp = document.getElementById("main-app");
 
+        // Enable button only when checkbox is checked
+        agreeCheckbox.addEventListener('change', function() {
+            enterBtn.disabled = !this.checked;
+        });
+
+        function enterApp() {
+            gateway.style.display = "none";
+            mainApp.style.display = "block";
+        }
+
+        function showLegal() {
+            gateway.style.display = "flex";
+            mainApp.style.display = "none";
+        }
+
+        // QR Logic
         const qr = new QRCode(qrcodeDiv, {
             width: 200,
             height: 200,
@@ -58,28 +120,21 @@
             try {
                 const url = new URL(string);
                 return url.protocol === "http:" || url.protocol === "https:";
-            } catch (_) {
-                return false;  
-            }
+            } catch (_) { return false; }
         }
 
         function handleGenerate() {
             const val = urlInput.value.trim();
-
-            // 1. Reset display
             qrcodeDiv.style.display = "none";
             downloadBtn.style.display = "none";
 
             if (val === "") {
                 message.innerText = "No URL Inserted";
                 message.className = "status-text";
-            } 
-            else if (!isValidURL(val)) {
+            } else if (!isValidURL(val)) {
                 message.innerText = "URL Is Invalid";
                 message.className = "error-text";
-            } 
-            else {
-                // Success
+            } else {
                 message.innerText = "";
                 qr.makeCode(val);
                 qrcodeDiv.style.display = "block";
@@ -98,23 +153,14 @@
         function downloadWithOutline() {
             const canvas = qrcodeDiv.querySelector('canvas');
             if (!canvas) return;
-
-            // Create a temporary canvas for the white outline (padding)
             const padding = 20;
             const tempCanvas = document.createElement("canvas");
             const ctx = tempCanvas.getContext("2d");
-
             tempCanvas.width = canvas.width + (padding * 2);
             tempCanvas.height = canvas.height + (padding * 2);
-
-            // Draw white background
             ctx.fillStyle = "white";
             ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-            // Draw the QR code on top
             ctx.drawImage(canvas, padding, padding);
-
-            // Trigger download
             const link = document.createElement("a");
             link.href = tempCanvas.toDataURL("image/png");
             link.download = "Abel_QR_Code.png";
